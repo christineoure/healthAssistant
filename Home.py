@@ -128,29 +128,32 @@ if "messages" not in st.session_state:
 # User input section
 user_input = st.text_input("📝 Describe your symptoms or ask a question:")
 
-if st.button("Get Diagnosis"):
-    if user_input:
-        # Display user message
-        st.session_state["messages"].append({"role": "user", "content": user_input})
+try:
+    if st.button("Get Diagnosis"):
+        if user_input:
+            # Display user message
+            st.session_state["messages"].append({"role": "user", "content": user_input})
 
-        # Clean the user input
-        cleaned_input = re.sub(r"[^A-Za-z\s]", "", user_input.lower().strip())
+            # Clean the user input
+            cleaned_input = re.sub(r"[^A-Za-z\s]", "", user_input.lower().strip())
 
-        # Get AI response
-        with st.spinner("Processing your diagnosis..."):
-            ai_response = get_gemini_response(cleaned_input)  
+            # Get AI response
+            with st.spinner("Processing your diagnosis..."):
+                ai_response = get_gemini_response(cleaned_input)
 
-        # Display AI message
-        st.session_state["messages"].append({"role": "ai", "content": ai_response})
+            # Display AI message
+            st.session_state["messages"].append({"role": "ai", "content": ai_response})
 
-        # Recommend a specialist
-        recommended_specialist = next(
-            (specialist for keyword, specialist in SPECIALIST_MAPPING.items() if keyword in cleaned_input),
-            "General Physician",
-        )
-        st.info(f"Recommended Specialist: **{recommended_specialist}**")
-    else:
-        st.warning("Please enter symptoms or a question!")
+            # Recommend a specialist
+            recommended_specialist = next(
+                (specialist for keyword, specialist in SPECIALIST_MAPPING.items() if keyword in cleaned_input),
+                "General Physician",
+            )
+            st.info(f"Recommended Specialist: **{recommended_specialist}**")
+        else:
+            st.warning("Please enter symptoms or a question!")
+except Exception as e:
+    st.error(e)
 
 # Display chat messages
 for msg in st.session_state["messages"]:
