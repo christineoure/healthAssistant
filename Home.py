@@ -6,7 +6,6 @@ import google.generativeai as genai
 from datetime import datetime
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
 
 # Load environment variables from the .env file
 load_dotenv()
@@ -32,6 +31,7 @@ SPECIALIST_MAPPING = {
     "diabetes": "Endocrinologist",
 }
 
+
 def get_gemini_response(user_input):
     """Send the input to Google Generative AI and get a response."""
     try:
@@ -40,6 +40,7 @@ def get_gemini_response(user_input):
         return response.text
     except Exception as e:
         return f"Error: {str(e)}"
+
 
 # Function to set the background color
 def set_background_color(color_hex):
@@ -55,15 +56,13 @@ def set_background_color(color_hex):
         unsafe_allow_html=True,
     )
 
+
 # Set the page configuration
 st.set_page_config(page_title="My Health Buddy", page_icon="🩺")
 
 # Set the background color
 background_color = "#BFE0DB"  # Hexadecimal for the provided light teal color
 set_background_color(background_color)
-
-# App title and logo
-# logo_image = "images/Health__106_-removebg-preview.png"
 
 # App title and logo
 logo_image_path = "images/icon.png"
@@ -113,7 +112,7 @@ if st.sidebar.button("Confirm Booking"):
     else:
         # Format the selected date and time
         booking_datetime = datetime.combine(session_date, session_time)
-        
+
         # Display success message
         st.sidebar.success(
             f"Session with **{specialist_dropdown}** successfully booked on "
@@ -125,39 +124,81 @@ st.header("Chat with Virtual Doctor")
 if "messages" not in st.session_state:
     st.session_state["messages"] = []
 
+
+# Function to display chat messages with bubbles
+def display_chat_bubbles():
+    """Display chat messages with styled chat bubbles."""
+    for msg in st.session_state["messages"]:
+        if msg["role"] == "user":
+            # User message bubble
+            st.markdown(
+                f"""
+                <div style="
+                    display: flex; justify-content: flex-end; margin: 10px 0;
+                ">
+                    <div style="
+                        background-color: #DCF8C6;
+                        padding: 10px 15px;
+                        border-radius: 15px;
+                        max-width: 60%;
+                        text-align: left;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+                    ">
+                        <strong>You:</strong> {msg["content"]}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+        else:
+            # Bot message bubble
+            st.markdown(
+                f"""
+                <div style="
+                    display: flex; justify-content: flex-start; margin: 10px 0;
+                ">
+                    <div style="
+                        background-color: #F1F0F0;
+                        padding: 10px 15px;
+                        border-radius: 15px;
+                        max-width: 60%;
+                        text-align: left;
+                        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+                    ">
+                        <strong>Virtual Doctor:</strong> {msg["content"]}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+
+# Display the chat messages
+display_chat_bubbles()
+
 # User input section
 user_input = st.text_input("📝 Describe your symptoms or ask a question:")
 
-try:
-    if st.button("Get Diagnosis"):
-        if user_input:
-            # Display user message
-            st.session_state["messages"].append({"role": "user", "content": user_input})
+if st.button("Get Diagnosis"):
+    if user_input:
+        # Append user message
+        st.session_state["messages"].append({"role": "user", "content": user_input})
 
-            # Clean the user input
-            cleaned_input = re.sub(r"[^A-Za-z\s]", "", user_input.lower().strip())
+        # Clean the user input
+        cleaned_input = re.sub(r"[^A-Za-z\s]", "", user_input.lower().strip())
 
-            # Get AI response
-            with st.spinner("Processing your diagnosis..."):
-                ai_response = get_gemini_response(cleaned_input)
+        # Get AI response
+        with st.spinner("Processing your diagnosis..."):
+            ai_response = get_gemini_response(cleaned_input)
 
-            # Display AI message
-            st.session_state["messages"].append({"role": "ai", "content": ai_response})
+        # Append bot response
+        st.session_state["messages"].append({"role": "ai", "content": ai_response})
 
-            # Recommend a specialist
-            recommended_specialist = next(
-                (specialist for keyword, specialist in SPECIALIST_MAPPING.items() if keyword in cleaned_input),
-                "General Physician",
-            )
-            st.info(f"Recommended Specialist: **{recommended_specialist}**")
-        else:
-            st.warning("Please enter symptoms or a question!")
-except Exception as e:
-    st.error(e)
-
-# Display chat messages
-for msg in st.session_state["messages"]:
-    if msg["role"] == "user":
-        st.write(f"🧑‍💻 **You:** {msg['content']}")
+        # Recommend a specialist
+        recommended_specialist = next(
+            (specialist for keyword, specialist in SPECIALIST_MAPPING.items() if keyword in cleaned_input),
+            "General Physician",
+        )
+        st.info(f"Recommended Specialist: **{recommended_specialist}**")
     else:
-        st.markdown(f"👨‍⚕️ **Virtual Doctor:** {msg['content']}")
+        st.warning("Please enter symptoms or a question!")
